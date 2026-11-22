@@ -4,6 +4,14 @@ App (PWA, com foco no celular) de **planejamento diário em família**: atividad
 
 React 19 + TypeScript + Vite + Tailwind · Supabase (login, Postgres com RLS, Edge Functions) · Google Agenda · Web Push · e-mail (Resend) · pg_cron.
 
+As telas abaixo usam **dados fictícios** (Alex, Maria, Família Silva).
+
+| Dia e checklist (desktop) | Nova atividade / recorrência | Ranking do mês (celular) |
+|---|---|---|
+| ![Dia](docs/screenshots/desktop-dia-checklist.png) | ![Recorrência](docs/screenshots/desktop-recorrencia.png) | ![Mês](docs/screenshots/mobile-mes-ranking.png) |
+
+Mais telas (incluindo versões para celular) em [`docs/screenshots/`](docs/screenshots).
+
 ## Funções
 
 - Cada pessoa tem seu login e configura **início do dia**, **quantas horas tem o dia** e o **horário de fim do dia** (obrigatório).
