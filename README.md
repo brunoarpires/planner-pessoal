@@ -6,6 +6,8 @@ React 19 + TypeScript + Vite + Tailwind · Supabase (login, Postgres com RLS, Ed
 
 As telas abaixo usam **dados fictícios** (Alex, Maria, Família Silva).
 
+![Planner Pessoal](docs/screenshots/capa-1200x627.png)
+
 | Dia e checklist (desktop) | Nova atividade / recorrência | Ranking do mês (celular) |
 |---|---|---|
 | ![Dia](docs/screenshots/desktop-dia-checklist.png) | ![Recorrência](docs/screenshots/desktop-recorrencia.png) | ![Mês](docs/screenshots/mobile-mes-ranking.png) |
