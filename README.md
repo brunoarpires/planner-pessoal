@@ -18,7 +18,7 @@ O app é um PWA (React + TypeScript + Vite + Tailwind) com **Supabase** (Auth, P
 
 - 📅 **Dia:** lista do dia com horário, duração e categorias; criar, editar e apagar atividades.
 - ✅ **Checklist do fim do dia:** cada item precisa de um status pessoal (não vale só “marcar como feito”). Atividades pendentes no fim do dia geram um **aviso**, mas **não bloqueiam** o app.
-- 🔁 **Recorrência:** a cada X horas, diária, semanal, mensal ou anual — com “só esta ocorrência” ou “esta e as próximas”.
+- 🔁 **Recorrência:** a cada X horas, diária, semanal, mensal ou anual, com término, quantidade ou **sem fim** — e edição/exclusão em “só esta ocorrência” ou “esta e as próximas” (inclusive **mudar a data** da série).
 - 👨‍👩‍👧‍👦 **Família:** cada pessoa tem a própria conta; tarefas podem ser só suas ou compartilhadas (com a família inteira ou com pessoas escolhidas).
 - 🏆 **Pontuação e ranking** mensal da família.
 - 🔔 **Lembretes no celular** (Web Push) e, se o Google Agenda estiver conectado, lembrete por e-mail do próprio Google.
@@ -72,7 +72,7 @@ Tipos: **a cada X horas**, **diária**, **semanal**, **mensal** ou **anual**. A 
 O servidor materializa as ocorrências numa janela móvel de **60 dias** à frente (e recompõe quando necessário). Ao editar ou apagar, a pessoa escolhe:
 
 - **Só esta** ocorrência.
-- **Esta e as próximas** (as anteriores da série ficam como estavam). A exclusão em cadeia **não apaga** ocorrências que já tenham status pessoal preenchido.
+- **Esta e as próximas** (as anteriores da série ficam como estavam), inclusive para **mudar a data**: as ocorrências abertas e a regra da série são deslocadas juntas. A exclusão em cadeia **não apaga** ocorrências que já tenham status pessoal preenchido.
 
 ## Tarefas compartilhadas
 
@@ -112,6 +112,20 @@ A Edge Function `google-sync` (o token fica só no servidor, na tabela `google_t
 - **Importa** os eventos da Agenda de **hoje até 14 dias à frente**. Eventos que o próprio planner criou (marcados com a propriedade privada `plannerId`) são ignorados na importação, para não duplicar. Os demais entram na tabela `eventos_google` e aparecem no dia.
 
 A sincronização roda ao **abrir o app**, ao **voltar para a aba**, **alguns segundos depois de editar** e no botão **Sincronizar agora**. O arquivo padrão [`supabase/cron.sql`](supabase/cron.sql) agenda só os lembretes (a cada 5 minutos); um job extra de `google-sync` é opcional, se você quiser a agenda atualizada mesmo com o app fechado.
+
+
+## Novidades
+
+### v1.0.0 (27/11/2026)
+
+Primeira versão etiquetada do código público (já publicado em 22/11/2026). O repositório privado não recebeu commits novos depois dessa cópia; esta release formaliza a versão e documenta o que o app já faz:
+
+- Checklist do dia **e de dias anteriores** (pode preencher ou corrigir o passado; pendências não travam o app).
+- Edição dos **campos comuns** de uma tarefa compartilhada por **qualquer participante**.
+- Recorrência **sem fim** por padrão, janela móvel de 60 dias, e **mudança de data** no modo “esta e as próximas”.
+- Pontuação com motivos de “não feito”, celebração ao concluir o dia e lembretes (Web Push + Google Agenda).
+
+A limpeza automática de eventos órfãos no Google Agenda ainda **não** faz parte desta versão.
 
 ## Família e contas
 
