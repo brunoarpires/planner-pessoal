@@ -10,8 +10,9 @@ import { NovaAtividade } from '../components/NovaAtividade'
 
 const rotulo = (d: string, hoje: string) => d === hoje ? 'Hoje' : d === somaDias(hoje, 1) ? 'Amanhã' : d === somaDias(hoje, -1) ? 'Ontem' : new Date(d + 'T12:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' })
 
-export function Dia({ eu, hoje, pendentes, atualizarPendentes, versaoSync }: { eu: Membro; hoje: string; pendentes: Atividade[]; atualizarPendentes: () => void; versaoSync: number }) {
-  const [data, setData] = useState(hoje)
+export function Dia({ eu, hoje, pendentes, atualizarPendentes, versaoSync, dataInicial }: { eu: Membro; hoje: string; pendentes: Atividade[]; atualizarPendentes: () => void; versaoSync: number; dataInicial?: string }) {
+  const [data, setData] = useState(dataInicial || hoje)
+  useEffect(() => { if (dataInicial) setData(dataInicial) }, [dataInicial])
   const [lista, setLista] = useState<Atividade[]>([])
   const [eventos, setEventos] = useState<EventoGoogle[]>([])
   const [novo, setNovo] = useState(false)

@@ -48,3 +48,40 @@ export async function eventosDoDia(data: string): Promise<EventoGoogle[]> {
   const { data: r } = await supabase.from('eventos_google').select('*').eq('data', data).order('hora', { nullsFirst: true })
   return (r ?? []) as EventoGoogle[]
 }
+
+export type MotivoOrfao = 'atividade_ausente' | 'duplicata_com_canonico'
+export interface OrfaoGoogle {
+  id: string
+  plannerId: string
+  titulo: string
+  data: string | null
+  hora: string | null
+  motivo: MotivoOrfao
+}
+export interface ResultadoOrfaos {
+  acao?: 'listarOrfaos' | 'limparOrfaos'
+  encontrados: number
+  orfaos: OrfaoGoogle[]
+  orfaos_removidos: number
+  erros: number
+  falhas?: Array<{ id: string; titulo: string; erro: string }>
+}
+
+async function chamarOrfaos(acao: 'listarOrfaos' | 'limparOrfaos'): Promise<ResultadoOrfaos> {
+  const { data, error } = await supabase.functions.invoke('google-sync', { body: { acao } })
+  if (error) throw new Error(error.message)
+  if (data && data.ok === false && data.erro) throw new Error(String(data.erro))
+  const r = data?.resultado
+  if (!r) throw new Error('Resposta inválida da sincronização.')
+  if (r.erro) throw new Error(String(r.erro))
+  // Só aceita a forma nova (v11+). A v10 publicada ignora `acao` e faria um sync comum.
+  if (r.acao !== acao || !Array.isArray(r.orfaos)) {
+    throw new Error('A limpeza manual ainda não está publicada no servidor. Publique a função google-sync desta versão primeiro.')
+  }
+  return r as ResultadoOrfaos
+}
+
+/** Varredura só de leitura: eventos do app sem atividade correspondente (ou duplicata real). */
+export function listarOrfaosGoogle() { return chamarOrfaos('listarOrfaos') }
+/** Revarre com as mesmas regras e remove só os órfãos confirmados. */
+export function limparOrfaosGoogle() { return chamarOrfaos('limparOrfaos') }

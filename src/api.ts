@@ -149,4 +149,16 @@ export const api = {
   async novoCodigo() { return ok(await supabase.rpc('novo_codigo_convite')) as string },
   async definirPapel(u: string, p: string) { ok(await supabase.rpc('definir_papel', { p_user: u, p_papel: p })) },
   async remover(u: string) { ok(await supabase.rpc('remover_membro', { p_user: u })) },
+  async avisosLidos() {
+    return ok(await supabase.from('avisos_lidos').select('aviso_id,assinatura,lido_em')) as { aviso_id: string; assinatura: string | null; lido_em: string }[]
+  },
+  async marcarAvisoLido(aviso_id: string, assinatura: string) {
+    ok(await supabase.from('avisos_lidos').upsert({ aviso_id, assinatura, lido_em: new Date().toISOString() }, { onConflict: 'user_id,aviso_id' }))
+  },
+  async marcarAvisosLidos(itens: Array<{ aviso_id: string; assinatura: string }>) {
+    if (!itens.length) return
+    const agora = new Date().toISOString()
+    ok(await supabase.from('avisos_lidos').upsert(itens.map((i) => ({ ...i, lido_em: agora })), { onConflict: 'user_id,aviso_id' }))
+  },
 }
+

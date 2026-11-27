@@ -2,12 +2,18 @@ import { SeletorHora } from '../components/SeletorHora'
 import { useEffect, useState } from 'react'
 import { api, type Familia, type Membro } from '../api'
 import { supabase } from '../supabase'
-import { conectarGoogle, desconectarGoogle, sincronizarGoogle, statusGoogle, type StatusGoogle } from '../google'
+import { conectarGoogle, desconectarGoogle, limparOrfaosGoogle, sincronizarGoogle, statusGoogle, type ResultadoOrfaos, type StatusGoogle } from '../google'
 import { ativarPush } from '../push'
 import { GerenciarCategorias } from '../categorias'
 import { Convidar } from '../components/Convidar'
 
-export function Ajustes({ eu, onMudou }: { eu: Membro; onMudou: () => void }) {
+export function Ajustes({ eu, onMudou, orfaos, onOrfaosMudou, destaqueOrfaos }: {
+  eu: Membro
+  onMudou: () => void
+  orfaos: ResultadoOrfaos | null
+  onOrfaosMudou: () => void
+  destaqueOrfaos?: boolean
+}) {
   const [c, setC] = useState({ inicio_dia: eu.inicio_dia.slice(0, 5), horas_dia: String(eu.horas_dia), fim_dia: eu.fim_dia.slice(0, 5), lembrete_min: String(eu.lembrete_min), lembrete_email: eu.lembrete_email, lembrete_push: eu.lembrete_push, nome: eu.nome })
   const [toast, setToast] = useState<{ ok: boolean; txt: string } | null>(null), [salvando, setSalvando] = useState(false)
   const [msg, setMsg] = useState(''), [google, setGoogle] = useState<StatusGoogle | null>(null)
@@ -17,8 +23,20 @@ export function Ajustes({ eu, onMudou }: { eu: Membro; onMudou: () => void }) {
   useEffect(carregarFam, [])
   const carregarGoogle = () => { statusGoogle().then(setGoogle) }
   useEffect(carregarGoogle, [])
+  useEffect(() => {
+    if (destaqueOrfaos && orfaos && orfaos.encontrados > 0) {
+      document.getElementById('limpeza-orfaos')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [destaqueOrfaos, orfaos])
   const quando = (d: string | null) => d ? new Date(d).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : 'ainda não'
   const tentar = async (f: () => Promise<unknown>, ok?: string) => { setMsg(''); try { const r = await f(); setMsg(typeof r === 'string' ? r : ok || 'Salvo ✅') } catch (e) { setMsg((e as Error).message) } }
+  const [limpandoOrfaos, setLimpandoOrfaos] = useState(false)
+  const [resultadoOrfaos, setResultadoOrfaos] = useState<string | null>(null)
+  const fmtOrfao = (d: string | null, h: string | null) => {
+    if (!d) return ''
+    const data = d.split('-').reverse().join('/')
+    return h ? `${data} às ${h.slice(0, 5)}` : data
+  }
   return (
     <div className="space-y-4">
       <div className="card space-y-3"><h2 className="font-semibold">Meu dia</h2>
@@ -51,10 +69,37 @@ export function Ajustes({ eu, onMudou }: { eu: Membro; onMudou: () => void }) {
               <p className={`text-sm ${google.erro ? 'text-red-600' : 'text-emerald-700'}`}>{google.erro ? `⚠️ ${google.erro}` : '✅ Conectado — sincroniza sozinho a cada 5 min e ao editar.'}</p>
               <p className="text-xs text-slate-500">Última sincronização: {quando(google.ultimo_sync)}</p>
               <div className="flex gap-2">
-                <button className="btn-sec flex-1 text-sm" onClick={() => tentar(async () => { await sincronizarGoogle(); carregarGoogle() }, 'Sincronizado ✅')}>Sincronizar agora</button>
+                <button className="btn-sec flex-1 text-sm" onClick={() => tentar(async () => { await sincronizarGoogle(); carregarGoogle(); onOrfaosMudou() }, 'Sincronizado ✅')}>Sincronizar agora</button>
                 {google.erro ? <button className="btn flex-1 text-sm" onClick={() => tentar(conectarGoogle)}>Reconectar</button>
-                  : <button className="btn-sec text-sm text-red-600" onClick={() => confirm('Desconectar o Google Agenda?') && tentar(async () => { await desconectarGoogle(); carregarGoogle() }, 'Desconectado')}>Desconectar</button>}
-              </div></>
+                  : <button className="btn-sec text-sm text-red-600" onClick={() => confirm('Desconectar o Google Agenda?') && tentar(async () => { await desconectarGoogle(); carregarGoogle(); onOrfaosMudou() }, 'Desconectado')}>Desconectar</button>}
+              </div>
+              {orfaos && orfaos.encontrados > 0 && (
+                <div id="limpeza-orfaos" className={`rounded-lg border p-3 space-y-2 ${destaqueOrfaos ? 'border-brand-400 bg-brand-50' : 'border-slate-200 bg-slate-50'}`}>
+                  <p className="text-sm font-medium">Eventos órfãos na Agenda</p>
+                  <p className="text-xs text-slate-600">Encontramos {orfaos.encontrados} evento{orfaos.encontrados === 1 ? '' : 's'} que o Planner criou e cuja atividade já não existe (ou é duplicata). Seus outros compromissos não entram nesta lista.</p>
+                  <ul className="max-h-40 overflow-auto text-sm space-y-1">
+                    {orfaos.orfaos.map((o) => (
+                      <li key={o.id}>
+                        <span className="font-medium">{o.titulo}</span>
+                        {o.data && <span className="text-slate-500"> — {fmtOrfao(o.data, o.hora)}</span>}
+                        <span className="text-xs text-slate-400"> · {o.motivo === 'duplicata_com_canonico' ? 'duplicata' : 'atividade apagada'}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <button className="btn w-full text-sm" disabled={limpandoOrfaos} onClick={async () => {
+                    if (!confirm(`Remover ${orfaos.encontrados} evento(s) órfão(s) da sua Google Agenda? Isso não apaga outros compromissos.`)) return
+                    setLimpandoOrfaos(true); setResultadoOrfaos(null)
+                    try {
+                      const r = await limparOrfaosGoogle()
+                      const txt = r.erros ? `${r.orfaos_removidos} removido(s), ${r.erros} erro(s).` : `${r.orfaos_removidos} removido(s).`
+                      setResultadoOrfaos(txt); setMsg(txt); onOrfaosMudou(); carregarGoogle()
+                    } catch (e) { setMsg((e as Error).message) }
+                    finally { setLimpandoOrfaos(false) }
+                  }}>{limpandoOrfaos ? 'Removendo…' : `Remover ${orfaos.encontrados} evento${orfaos.encontrados === 1 ? '' : 's'}`}</button>
+                  {resultadoOrfaos && <p className="text-xs text-emerald-700">{resultadoOrfaos}</p>}
+                </div>
+              )}
+              </>
             : <>
               <p className="text-sm text-slate-500">Não conectado. Conecte uma vez e pronto: suas atividades vão para a agenda e os eventos aparecem no app.</p>
               <button className="btn w-full" onClick={() => tentar(conectarGoogle)}>Conectar Google Agenda</button></>}

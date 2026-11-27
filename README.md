@@ -17,12 +17,13 @@ O app é um PWA (React + TypeScript + Vite + Tailwind) com **Supabase** (Auth, P
 ## Funcionalidades
 
 - 📅 **Dia:** lista do dia com horário, duração e categorias; criar, editar e apagar atividades.
-- ✅ **Checklist do fim do dia:** cada item precisa de um status pessoal (não vale só “marcar como feito”). Atividades pendentes no fim do dia geram um **aviso**, mas **não bloqueiam** o app.
+- ✅ **Checklist do fim do dia:** cada item precisa de um status pessoal (não vale só “marcar como feito”). Atividades pendentes no fim do dia **não bloqueiam** o app. Dias anteriores sem checklist fechado aparecem na aba **Avisos**.
 - 🔁 **Recorrência:** a cada X horas, diária, semanal, mensal ou anual, com término, quantidade ou **sem fim** — e edição/exclusão em “só esta ocorrência” ou “esta e as próximas” (inclusive **mudar a data** da série).
 - 👨‍👩‍👧‍👦 **Família:** cada pessoa tem a própria conta; tarefas podem ser só suas ou compartilhadas (com a família inteira ou com pessoas escolhidas).
 - 🏆 **Pontuação e ranking** mensal da família.
 - 🔔 **Lembretes no celular** (Web Push) e, se o Google Agenda estiver conectado, lembrete por e-mail do próprio Google.
-- 📆 **Sincronização com o Google Agenda:** o planner envia as atividades e importa os eventos da agenda (hoje até 14 dias à frente).
+- 📆 **Sincronização com o Google Agenda:** o planner envia as atividades e importa os eventos da agenda (hoje até 14 dias à frente). Em Ajustes, se existirem **eventos órfãos** (criados pelo app cuja atividade já não existe), dá para revisar a lista e removê-los com confirmação.
+- 🔔 **Avisos:** aba com os avisos necessários (checklist atrasado, órfãos na Agenda e erro do Google), com contador de não lidos.
 - 👤 **Perfil (Meu dia):** cada pessoa configura nome, início, duração e fim do dia, antecipação dos lembretes, notificações neste aparelho e a conexão com o Google Agenda (detalhes abaixo).
 - 🌙 Tema claro, escuro ou automático; menu inferior no celular e lateral no computador. Instalável como **PWA**.
 
@@ -43,7 +44,7 @@ O fuso usado pelo app para “agora” e para o fechamento do dia vem do cadastr
 ### Integrações
 
 - **Ativar notificações neste aparelho:** cadastra este navegador para **Web Push**. Sem essa ativação neste aparelho, o canal “celular” da atividade não chega aqui.
-- **Google Agenda:** conectar, reconectar, desconectar e **Sincronizar agora**. Depois de conectado, o app mostra a data da última sincronização. Os lembretes por e-mail das atividades passam pelo Google Agenda (veja *Lembretes*), então é preciso conectar a agenda para usar o canal “e-mail”.
+- **Google Agenda:** conectar, reconectar, desconectar e **Sincronizar agora**. Depois de conectado, o app mostra a data da última sincronização. Se houver eventos órfãos criados pelo planner, aparece também a opção de revisar e removê-los (só esses; os outros compromissos da Agenda não entram). Os lembretes por e-mail das atividades passam pelo Google Agenda (veja *Lembretes*), então é preciso conectar a agenda para usar o canal “e-mail”.
 
 O canal do lembrete **não é um interruptor geral do perfil**. Em cada atividade a pessoa escolhe **celular**, **e-mail**, **ambos** ou **nenhum**. O canal é pessoal: na tarefa compartilhada, quem cria aplica a escolha na própria cópia; os demais começam em “ambos” e ajustam a sua.
 
@@ -63,7 +64,7 @@ O administrador também gerencia as **categorias** da família (nome, emoji, cor
 
 Cada atividade tem título, data, horário, duração, categoria (e subcategoria), observação e canal de lembrete. **Não é possível criar atividade no passado.** O checklist, no entanto, pode ser preenchido ou corrigido no dia de hoje e em **dias já passados**.
 
-Para o checklist, “checada” significa que a pessoa escolheu um **status pessoal** (não basta o visto de feito). No fim do dia, o que ainda estiver pendente gera aviso e os lembretes de fechamento; o app **não trava** o uso.
+Para o checklist, “checada” significa que a pessoa escolheu um **status pessoal** (não basta o visto de feito). No fim do dia, o que ainda estiver pendente gera os lembretes de fechamento; o app **não trava** o uso. Cada dia anterior ainda sem checklist fechado aparece como aviso na aba **Avisos**, com um atalho que abre aquele dia.
 
 ## Recorrências
 
@@ -110,11 +111,18 @@ A Edge Function `google-sync` (o token fica só no servidor, na tabela `google_t
 
 - **Envia** para a Agenda as atividades com sincronização pendente, a partir de ontem.
 - **Importa** os eventos da Agenda de **hoje até 14 dias à frente**. Eventos que o próprio planner criou (marcados com a propriedade privada `plannerId`) são ignorados na importação, para não duplicar. Os demais entram na tabela `eventos_google` e aparecem no dia.
+- **Órfãos:** eventos do próprio app cuja atividade já não existe (ou que são duplicata do evento canônico) podem ser listados e removidos em Ajustes, com confirmação. Só entram eventos com `plannerId`; o restante da Agenda não é alterado. A function também pode fazer essa limpeza automaticamente no máximo cerca de 1 vez por hora (ou na hora, se o corpo da chamada tiver `forcarLimpeza`).
 
 A sincronização roda ao **abrir o app**, ao **voltar para a aba**, **alguns segundos depois de editar** e no botão **Sincronizar agora**. O arquivo padrão [`supabase/cron.sql`](supabase/cron.sql) agenda só os lembretes (a cada 5 minutos); um job extra de `google-sync` é opcional, se você quiser a agenda atualizada mesmo com o app fechado.
 
 
 ## Novidades
+
+### v1.1.0 (27/11/2026)
+
+- Aba **Avisos** na barra inferior, com contador de não lidos: checklist de um dia anterior não fechado (abre o dia), eventos órfãos na Google Agenda (vai para Ajustes) e erro do Google que pede reconexão.
+- Limpeza **manual** de órfãos em Ajustes (a opção só aparece quando há o que limpar): mostra título e data, pede confirmação e remove apenas eventos criados pelo planner.
+- O estado lido/não lido fica na tabela `avisos_lidos` (cada pessoa vê só as próprias linhas).
 
 ### v1.0.0 (27/11/2026)
 
@@ -153,7 +161,7 @@ flowchart TB
 
 ## Stack
 
-React 19, TypeScript, Vite, Tailwind CSS, Supabase (Auth, Postgres com RLS, Edge Functions em Deno, pg_cron), Web Push (VAPID), API do Google Calendar, vite-plugin-pwa. Testes de pontuação e regras em `scripts/test-regras.mjs` (não é Vitest).
+React 19, TypeScript, Vite, Tailwind CSS, Supabase (Auth, Postgres com RLS, Edge Functions em Deno, pg_cron), Web Push (VAPID), API do Google Calendar, vite-plugin-pwa. Testes de pontuação, regras, órfãos e avisos em `scripts/test-regras.mjs`, `scripts/test-google-orfaos.mjs` e `scripts/test-avisos.mjs` (não é Vitest).
 
 ## Como rodar
 
@@ -165,7 +173,7 @@ npm install
 npm run dev        # http://localhost:5173
 npm run build
 npm run preview    # http://localhost:4173
-npm test           # regras de pontuação, recorrência e checklist
+npm test           # regras, limpeza de órfãos e avisos
 ```
 
 ### Instalar no celular
@@ -198,7 +206,7 @@ A cada `git push` o site atualiza.
 ## Testes
 
 ```bash
-npm test    # scripts/test-regras.mjs — pontuação, recorrência e regras do checklist
+npm test    # regras de pontuação/recorrência, limpeza de órfãos e avisos
 ```
 
 ## Limitações

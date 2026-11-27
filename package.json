@@ -1,13 +1,13 @@
 {
   "name": "planner-diario",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test": "tsc src/regras.ts --outDir node_modules/.tmp/teste --module esnext --target es2022 --skipLibCheck --ignoreConfig && node scripts/test-regras.mjs"
+    "test": "tsc src/regras.ts src/google-orfaos.ts src/avisos.ts --outDir node_modules/.tmp/teste --module esnext --target es2022 --skipLibCheck --ignoreConfig && node scripts/test-regras.mjs && node scripts/test-google-orfaos.mjs && node scripts/test-avisos.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.109.0",
