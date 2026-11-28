@@ -73,11 +73,11 @@ Tipos: **a cada X horas**, **diária**, **semanal**, **mensal** ou **anual**. A 
 O servidor materializa as ocorrências numa janela móvel de **60 dias** à frente (e recompõe quando necessário). Ao editar ou apagar, a pessoa escolhe:
 
 - **Só esta** ocorrência.
-- **Esta e as próximas** (as anteriores da série ficam como estavam), inclusive para **mudar a data**: as ocorrências abertas e a regra da série são deslocadas juntas. A exclusão em cadeia **não apaga** ocorrências que já tenham status pessoal preenchido.
+- **Esta e as próximas** (as anteriores da série ficam como estavam), inclusive para **mudar a data**: as ocorrências abertas e a regra da série são deslocadas juntas, via as RPCs `mover_proximas` e `excluir_proximas`. A exclusão em cadeia **não apaga** ocorrências que já tenham status pessoal preenchido.
 
 ## Tarefas compartilhadas
 
-Uma atividade pode ser só da pessoa, da **família inteira** ou de **pessoas escolhidas** (quem cria entra automaticamente). Cada participante recebe a própria cópia, no próprio dia, respeitando a duração do dia dela.
+Uma atividade pode ser só da pessoa, da **família inteira** ou de **pessoas escolhidas** (quem cria entra automaticamente). A RPC `criar_compartilhada` cria a própria cópia para cada participante, no próprio dia, respeitando a duração do dia dela.
 
 Regras de edição, como o código faz hoje:
 
@@ -161,7 +161,7 @@ flowchart TB
 
 ## Stack
 
-React 19, TypeScript, Vite, Tailwind CSS, Supabase (Auth, Postgres com RLS, Edge Functions em Deno, pg_cron), Web Push (VAPID), API do Google Calendar, vite-plugin-pwa. Testes de pontuação, regras, órfãos e avisos em `scripts/test-regras.mjs`, `scripts/test-google-orfaos.mjs` e `scripts/test-avisos.mjs` (não é Vitest).
+React 19, TypeScript, Vite, Tailwind CSS, Supabase (Auth, Postgres com RLS, Edge Functions em Deno, pg_cron), Web Push (VAPID), API do Google Calendar, vite-plugin-pwa (Workbox, `registerType: autoUpdate`, script `push-sw.js`). Testes de pontuação, regras, órfãos e avisos em `scripts/test-regras.mjs`, `scripts/test-google-orfaos.mjs` e `scripts/test-avisos.mjs` (não é Vitest).
 
 ## Como rodar
 
